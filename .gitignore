@@ -1,0 +1,6 @@
+data
+tb_logs
+notebooks
+runs
+
+*.pyc
