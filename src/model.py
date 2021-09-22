@@ -54,13 +54,13 @@ class AdaInStyleTransfer:
         return content_loss, style_loss
 
 
-def adain(content, style):
+
+def adain(content, style, eps=1e-5):
     mu_style = style.mean(axis=[-1, -2], keepdims=True)
     sigma_style = style.std(axis=[-1, -2], keepdims=True)
     mu_content = content.mean(axis=[-1, -2], keepdims=True)
     sigma_content = content.std(axis=[-1, -2], keepdims=True)
-
-    renorm = ((content - mu_content) / sigma_content) * sigma_style + mu_style
+    renorm = ((content - mu_content) / (sigma_content + eps)) * sigma_style + mu_style
     return renorm
 
 
