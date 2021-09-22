@@ -40,7 +40,7 @@ def main():
         os.makedirs(model_dir, exist_ok=True)
 
     # Create tensorboard writer
-    writer = SummaryWriter(log_dir="tb_logs/test")
+    writer = SummaryWriter(log_dir=os.path.join("tb_logs", args.alias))
 
     # Deine optimizer
     optimizer = torch.optim.Adam(params=model.decoder.parameters(), lr=0.0001)
