@@ -1,24 +1,28 @@
 from torchvision import models
 from torch import nn
 
-LAYERS_STYLE_LOSS = [0, 10, 19, 28]
+# First ReLU after MaxPooling
+LAYERS_STYLE_LOSS = [1, 6, 11, 20]
 
 
 class AdaInStyleTransfer:
     def __init__(self):
-        self.encoder, self.encoder_hook = build_encoder()
+        self.encoder = build_encoder()
         self.decoder = build_decoder()
 
-    def transfer_style(self, content, style):
+    def transfer_style(self, content, style, alpha=1.0):
         # Encode the content images using the pretrained model
-        content_code = self.encoder(content)
-        # Encode the style images using the pretrained model
-        style_code = self.encoder(style)
-        # Collect the outputs of the intermediate layers for computing the style loss later
-        style_loss_components_target = self.encoder_hook.copy()
+        content_code, _ = self.forward_encoder(content)
+        # Encode the style images using the pretrained model and Collect the outputs
+        # of the intermediate layers for computing the style loss later
+
+        style_code, style_loss_components_target = self.forward_encoder(style)
 
         # ADAIN: Normalize the content code to follow style stats
         adain_output = adain(content_code, style_code)
+
+        # Newstyle code
+        newstyle_code = (alpha) * adain_output + (1 - alpha) * content_code
 
         # Bring the normalized code to the image domain
         new_style = self.decoder(adain_output)
@@ -29,17 +33,16 @@ class AdaInStyleTransfer:
             content, style
         )
 
-        # Encode the generated image with the transferred style
-        newstyle_code = self.encoder(new_style)
-        # Collect the outputs of the intermediate layers for computint the style loss later
-        style_loss_components_gen = self.encoder_hook.copy()
+        # Encode the generated image with the transferred style and  collect the
+        # outputs of the intermediate layers for computint the style loss later
+        newstyle_code, style_loss_components_gen = self.forward_encoder(new_style)
 
         # Compute the content loss
         content_loss = nn.MSELoss()(adain_output, newstyle_code)
 
         # Compute the style loss for the selected layers
         style_loss = 0
-        for layer in LAYERS_STYLE_LOSS:
+        for layer in range(len(LAYERS_STYLE_LOSS)):
             target_act = style_loss_components_target[layer]
             gen_act = style_loss_components_gen[layer]
 
@@ -53,6 +56,13 @@ class AdaInStyleTransfer:
 
         return content_loss, style_loss
 
+    def forward_encoder(self, x):
+        intermediate_layers = []
+        for i, layer in enumerate(self.encoder):
+            x = layer(x)
+            if i in LAYERS_STYLE_LOSS:
+                intermediate_layers.append(x)
+        return intermediate_layers[-1], intermediate_layers
 
 
 def adain(content, style, eps=1e-5):
@@ -73,37 +83,17 @@ def get_activation(name, dictionary):
 
 def build_encoder():
     model = models.vgg19(pretrained=True)
-
-    conv_blocks = list(model.children())[0]
-
-    encoder_blocks = list(conv_blocks.children())[:-8]
-
-    encoder = nn.Sequential(*encoder_blocks)
-
-    # Create the forward hooks to collect the outputs of some intermediate layers,
-    # used to compute the style loss
-    activations_style_loss = {}
-    for l in LAYERS_STYLE_LOSS:
-        encoder.register_forward_hook(get_activation(l, activations_style_loss))
+    encoder = model.features
 
     # Freeze the parameters of the model
     for param in encoder.parameters():
         param.requires_grad = False
 
-    return encoder, activations_style_loss
+    return encoder
 
 
 def build_decoder():
     decoder = nn.Sequential(
-        nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
-        nn.ReLU(inplace=True),
-        nn.Upsample(scale_factor=2),
-        nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
-        nn.ReLU(inplace=True),
-        nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
-        nn.ReLU(inplace=True),
-        nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
-        nn.ReLU(inplace=True),
         nn.Conv2d(512, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
         nn.ReLU(inplace=True),
         nn.Upsample(scale_factor=2),
@@ -118,13 +108,11 @@ def build_decoder():
         nn.Upsample(scale_factor=2),
         nn.Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
         nn.ReLU(inplace=True),
-        nn.Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
-        nn.ReLU(inplace=True),
         nn.Conv2d(128, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
         nn.ReLU(inplace=True),
+        nn.Upsample(scale_factor=2),
         nn.Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
         nn.ReLU(inplace=True),
-        nn.Upsample(scale_factor=2),
         nn.Conv2d(64, 3, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
     )
     return decoder
