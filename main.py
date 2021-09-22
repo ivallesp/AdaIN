@@ -45,7 +45,7 @@ def main():
                 content.cuda(), style.cuda()
             )
 
-            total_loss = content_loss + style_loss
+            total_loss = (1.0 * content_loss + 10.0 * style_loss) / 11.0
 
             # Backward prop
             total_loss.backward()
