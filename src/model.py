@@ -25,14 +25,13 @@ class AdaInStyleTransfer:
         newstyle_code = (alpha) * adain_output + (1 - alpha) * content_code
 
         # Bring the normalized code to the image domain
-        new_style = self.decoder(adain_output)
+        new_style = self.decoder(newstyle_code)
         return new_style, style_loss_components_target, adain_output
 
     def calculate_losses(self, content, style):
         new_style, style_loss_components_target, adain_output = self.transfer_style(
             content, style
         )
-
         # Encode the generated image with the transferred style and  collect the
         # outputs of the intermediate layers for computint the style loss later
         newstyle_code, style_loss_components_gen = self.forward_encoder(new_style)
@@ -72,13 +71,6 @@ def adain(content, style, eps=1e-5):
     sigma_content = content.std(axis=[-1, -2], keepdims=True)
     renorm = ((content - mu_content) / (sigma_content + eps)) * sigma_style + mu_style
     return renorm
-
-
-def get_activation(name, dictionary):
-    def hook(model, input, output):
-        dictionary[name] = output.detach()
-
-    return hook
 
 
 def build_encoder():
