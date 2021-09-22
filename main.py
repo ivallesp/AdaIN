@@ -1,9 +1,14 @@
-import torch
+import os
+
 import numpy as np
-from src.model import AdaInStyleTransfer
-from src.data import get_coco_dataloader, get_abstract_art_dataloader
+import torch
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+
+from src.data import get_abstract_art_dataloader, get_coco_dataloader
+from src.model import AdaInStyleTransfer
+
+ALIAS = "test"
 
 
 def main():
@@ -15,6 +20,11 @@ def main():
     model = AdaInStyleTransfer()
     model.decoder = model.decoder.cuda()
     model.encoder = model.encoder.cuda()
+
+    # Create output model directory
+    model_dir = os.path.join("models", ALIAS)
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir, exist_ok=True)
 
     # Create tensorboard writer
     writer = SummaryWriter(log_dir="tb_logs/test")
@@ -71,6 +81,12 @@ def main():
         samples *= torch.tensor(np.array([0.229, 0.224, 0.225])[None, :, None, None])
         samples += torch.tensor(np.array([0.485, 0.456, 0.406])[None, :, None, None])
         writer.add_images("samples", samples, epoch)
+
+        # Save decoder model
+        torch.save(
+            model.decoder.state_dict(),
+            os.path.join(model_dir, f"decoder_{epoch:03}.pt"),
+        )
 
 
 if __name__ == "__main__":
