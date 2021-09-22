@@ -1,3 +1,4 @@
+import argparse
 import os
 
 import numpy as np
@@ -8,13 +9,25 @@ from tqdm import tqdm
 from src.data import get_abstract_art_dataloader, get_coco_dataloader
 from src.model import AdaInStyleTransfer
 
-ALIAS = "test"
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--alias", type=str, required=True, help="Alias for model")
+    parser.add_argument("--n-epochs", type=int, required=True, help="Number of epochs")
+    parser.add_argument("--batch-size", type=int, default=32, help="Batch size")
+    parser.add_argument(
+        "--style_loss_weight", type=float, default=10.0, help="Weight for style loss"
+    )
+    return parser.parse_args()
 
 
 def main():
+    # Get input args
+    args = parse_args()
+
     # Get data loaders
-    content_dataloader = get_coco_dataloader()
-    style_dataloader = get_abstract_art_dataloader()
+    content_dataloader = get_coco_dataloader(batch_size=args.batch_size)
+    style_dataloader = get_abstract_art_dataloader(batch_size=args.batch_size)
 
     # Create model and push to CUDA
     model = AdaInStyleTransfer()
@@ -22,7 +35,7 @@ def main():
     model.encoder = model.encoder.cuda()
 
     # Create output model directory
-    model_dir = os.path.join("models", ALIAS)
+    model_dir = os.path.join("models", args.alias)
     if not os.path.exists(model_dir):
         os.makedirs(model_dir, exist_ok=True)
 
@@ -55,7 +68,9 @@ def main():
                 content.cuda(), style.cuda()
             )
 
-            total_loss = (1.0 * content_loss + 10.0 * style_loss) / 11.0
+            total_loss = (1.0 * content_loss + args.style_loss_weight * style_loss) / (
+                1.0 + args.style_loss_weight
+            )
 
             # Backward prop
             total_loss.backward()
@@ -67,7 +82,7 @@ def main():
             optimizer.step()
             global_step += 1
 
-        # Push sample images to tensorboard
+        # Push traning sample images to tensorboard
         samples = model.transfer_style(content.cuda(), style.cuda())[0].cpu().detach()
 
         content *= torch.tensor(np.array([0.229, 0.224, 0.225])[None, :, None, None])

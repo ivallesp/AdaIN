@@ -42,7 +42,7 @@ def unzip_coco_dataset():
     print("Done")
 
 
-def get_coco_dataloader():
+def get_coco_dataloader(batch_size=32):
     normalize = transforms.Normalize(
         mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
     )
@@ -60,12 +60,12 @@ def get_coco_dataloader():
     dataset = datasets.ImageFolder("./data/coco/train2014/", transform=transform)
 
     dataloader = torch.utils.data.DataLoader(
-        dataset, batch_size=32, shuffle=True, drop_last=True
+        dataset, batch_size=batch_size, shuffle=True, drop_last=True
     )
     return dataloader
 
 
-def get_abstract_art_dataloader():
+def get_abstract_art_dataloader(batch_size=32):
     normalize = transforms.Normalize(
         mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
     )
@@ -83,6 +83,6 @@ def get_abstract_art_dataloader():
     dataset = datasets.ImageFolder("./data/abstract_art", transform=transform)
 
     dataloader = torch.utils.data.DataLoader(
-        dataset, batch_size=32, shuffle=True, drop_last=True
+        dataset, batch_size=batch_size, shuffle=True, drop_last=True
     )
     return dataloader
