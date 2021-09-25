@@ -98,14 +98,27 @@ def get_abstract_art_dataloader(batch_size=32):
 def _get_directory_dataloader(
     directory, batch_size, resize=True, augment=True, drop_last=True, shuffle=True
 ):
+    transform = _get_transformations(resize=resize, augment=augment)
 
+    dataset = datasets.ImageFolder(directory, transform=transform)
+
+    dataloader = torch.utils.data.DataLoader(
+        dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last
+    )
+    return dataloader
+
+
+def _get_transformations(resize, augment):
     transformations = []
     if resize:
-        transformations.extend(
-            [transforms.Resize(255), transforms.RandomSizedCrop(224)]
-        )
+        transformations.extend([transforms.Resize(255)])
     if augment:
-        transformations.extend([transforms.RandomHorizontalFlip()])
+        transformations.extend(
+            [transforms.RandomHorizontalFlip(), transforms.RandomSizedCrop(224)]
+        )
+    else:
+        transformations.extend([transforms.CenterCrop(224)])
+
     transformations.extend(
         [
             transforms.ToTensor(),
@@ -114,6 +127,7 @@ def _get_directory_dataloader(
     )
 
     transform = transforms.Compose(transformations)
+    return transform
 
     dataset = datasets.ImageFolder(directory, transform=transform)
 
