@@ -63,6 +63,9 @@ class AdaInStyleTransfer:
                 intermediate_layers.append(x)
         return intermediate_layers[-1], intermediate_layers
 
+    def __call__(self, content, style, alpha=1.0):
+        return self.transfer_style(content, style, alpha)
+
 
 def adain(content, style, eps=1e-5):
     mu_style = style.mean(axis=[-1, -2], keepdims=True)
