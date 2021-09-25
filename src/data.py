@@ -73,6 +73,15 @@ def download_abstract_art_dataset():
     print("Extracting Abstract Art Gallery dataset.")
     zip_ref = zipfile.ZipFile(os.path.join(dataset_path, "abstract-art-gallery.zip"))
     zip_ref.extractall(dataset_path)
+    # Merge the two folders into one
+    shutil.move(
+        os.path.join(dataset_path, "Abstract_gallery_2", "Abstract_gallery_2"),
+        os.path.join(dataset_path, "one"),
+    )
+    shutil.move(
+        os.path.join(dataset_path, "Abstract_gallery", "Abstract_gallery"),
+        os.path.join(dataset_path, "two"),
+    )
     print("Done extracting Abstract Art Gallery dataset.")
 
 
