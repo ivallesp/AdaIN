@@ -27,14 +27,19 @@ Once the build process finishes, you can start running code in the container. Th
     -v $(realpath ./models):/app/models \
     -v $(realpath ./data):/app/data \
     -v $(realpath out):/app/out \
+    --gpus all \
     -it adain \
         .venv/bin/python infer.py \
             --content-dir data/samples/content \
             --style-dir data/samples/style \
             --output-dir out \
             --model-dir models/abstract_art/ \
-            --epoch 45 --method cartesian
+            --epoch 45 \
+            --method cartesian \
+            --use-gpu
 ```
+
+If you wish to run the code on CPU, remove the `--use-gpu` flag and the `--gpus all` argument
 
 
 ## Contribution
