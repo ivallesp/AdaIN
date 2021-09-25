@@ -39,3 +39,6 @@ Once the build process finishes, you can start running code in the container. Th
 
 ## Contribution
 Pull requests and issues will be tackled upon availability.
+
+## License
+This code is licensed under the [MIT License](LICENSE).
