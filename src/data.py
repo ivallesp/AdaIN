@@ -4,7 +4,8 @@ import shutil
 import zipfile
 import urllib.request
 from torchvision import datasets, transforms
-from kaggle.api.kaggle_api_extended import KaggleApi
+from PIL import Image
+import numpy as np
 
 
 def download_coco_dataset():
@@ -63,6 +64,8 @@ def download_wikiart_dataset():
 
 
 def download_abstract_art_dataset():
+    from kaggle.api.kaggle_api_extended import KaggleApi
+
     api = KaggleApi()
     api.authenticate()
     print("Downloading Abstract Art Gallery dataset (700MB).")
@@ -129,9 +132,16 @@ def _get_transformations(resize, augment):
     transform = transforms.Compose(transformations)
     return transform
 
-    dataset = datasets.ImageFolder(directory, transform=transform)
 
-    dataloader = torch.utils.data.DataLoader(
-        dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last
-    )
-    return dataloader
+def load_and_transform(path, transform):
+    image = _load_image(path, numpy=False)
+    image = transform(image)
+    return image
+
+
+def _load_image(path, numpy=False):
+    img = Image.open(path)
+    img = img.convert("RGB")  # Force 3 channel image
+    if numpy:
+        img = np.asarray(img) / 255.0
+    return img
