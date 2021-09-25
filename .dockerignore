@@ -1,0 +1,5 @@
+data
+.venv
+.ipynb_checkpoints
+notebooks
+models

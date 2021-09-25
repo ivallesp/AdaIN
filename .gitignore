@@ -3,5 +3,5 @@ tb_logs
 notebooks
 runs
 models
-
+out
 *.pyc
