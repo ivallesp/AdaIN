@@ -1,17 +1,22 @@
 import argparse
 import os
 
+from PIL import Image, ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+
 import numpy as np
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from src.data import get_abstract_art_dataloader, get_coco_dataloader
+from src.data import get_dataloader
 from src.model import AdaInStyleTransfer
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--content-dataset", type=str, default="coco")
+    parser.add_argument("--style-dataset", type=str, default="abstract")
     parser.add_argument("--alias", type=str, required=True, help="Alias for model")
     parser.add_argument("--n-epochs", type=int, required=True, help="Number of epochs")
     parser.add_argument("--batch-size", type=int, default=32, help="Batch size")
@@ -26,8 +31,14 @@ def main():
     args = parse_args()
 
     # Get data loaders
-    content_dataloader = get_coco_dataloader(batch_size=args.batch_size)
-    style_dataloader = get_abstract_art_dataloader(batch_size=args.batch_size)
+    content_dataloader = get_dataloader(
+        args.content_dataset,
+        batch_size=args.batch_size,
+    )
+    style_dataloader = get_dataloader(
+        args.style_dataset,
+        batch_size=args.batch_size,
+    )
 
     # Create model and push to CUDA
     model = AdaInStyleTransfer()

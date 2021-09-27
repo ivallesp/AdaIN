@@ -88,6 +88,17 @@ def download_abstract_art_dataset():
     print("Done extracting Abstract Art Gallery dataset.")
 
 
+def get_dataloader(dataset, batch_size):
+    if dataset == "coco":
+        return get_coco_dataloader(batch_size)
+    elif dataset == "wikiart":
+        return get_wikiart_dataloader(batch_size)
+    elif dataset == "abstract_art":
+        return get_abstract_art_dataloader(batch_size)
+    else:
+        raise NotImplementedError(f"Dataset {dataset} not recognized.")
+
+
 def get_coco_dataloader(batch_size=32):
     path = os.path.join("data", "coco", "train2014")
     return _get_directory_dataloader(path, batch_size)
@@ -98,9 +109,15 @@ def get_abstract_art_dataloader(batch_size=32):
     return _get_directory_dataloader(path, batch_size)
 
 
+def get_wikiart_dataloader(batch_size=32):
+    path = os.path.join("data", "wikiart")
+    return _get_directory_dataloader(path, batch_size)
+
+
 def _get_directory_dataloader(
     directory, batch_size, resize=True, augment=True, drop_last=True, shuffle=True
 ):
+    print(f"Loading dataset: {directory}")
     transform = _get_transformations(resize=resize, augment=augment)
 
     dataset = datasets.ImageFolder(directory, transform=transform)
