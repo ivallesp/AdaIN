@@ -119,6 +119,12 @@ def main():
             map_location=device,
         )
     )
+    model.vae.load_state_dict(
+        torch.load(
+            os.path.join(args.model_dir, f"vae_{args.epoch:03d}.pt"),
+            map_location=device,
+        )
+    )
 
     # Move the model to the device
     model.encoder.to(device)
@@ -150,7 +156,7 @@ def main():
         style = load_and_transform(style_path, transform)[None].to(device)
 
         # Run the model
-        output, _, _ = model(content, style)
+        output, _, _, _, _, _ = model(content, style)
 
         # Postprocess the output
         output = output.squeeze(0).detach().cpu().numpy()

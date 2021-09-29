@@ -2,6 +2,7 @@ import argparse
 import os
 
 from PIL import Image, ImageFile
+
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 import numpy as np
@@ -44,6 +45,7 @@ def main():
     model = AdaInStyleTransfer()
     model.decoder = model.decoder.cuda()
     model.encoder = model.encoder.cuda()
+    model.vae = model.vae.cuda()
 
     # Create output model directory
     model_dir = os.path.join("models", args.alias)
@@ -52,9 +54,6 @@ def main():
 
     # Create tensorboard writer
     writer = SummaryWriter(log_dir=os.path.join("tb_logs", args.alias))
-
-    # Deine optimizer
-    optimizer = torch.optim.Adam(params=model.decoder.parameters(), lr=0.0001)
 
     # Train model
     style_iter = iter(style_dataloader)
@@ -71,26 +70,18 @@ def main():
                 # reinitialize data loader
                 style_iter = iter(style_dataloader)
                 style, _ = next(style_iter)
-            # Zero the gradients
-            optimizer.zero_grad()
 
-            # Get the loss
-            content_loss, style_loss = model.calculate_losses(
-                content.cuda(), style.cuda()
+            content_loss, style_loss, kld_loss, total_loss, kld_weight = model.opt(
+                content, style, args.style_loss_weight
             )
-
-            total_loss = (1.0 * content_loss + args.style_loss_weight * style_loss) / (
-                1.0 + args.style_loss_weight
-            )
-
-            # Backward prop
-            total_loss.backward()
-            writer.add_scalar("Content Loss", content_loss, global_step)
-            writer.add_scalar("Style Loss", style_loss, global_step)
-            writer.add_scalar("Total Loss", total_loss, global_step)
+            writer.add_scalar("Content Loss", content_loss, model.global_step)
+            writer.add_scalar("Style Loss", style_loss, model.global_step)
+            writer.add_scalar("KLD Loss", kld_loss, model.global_step)
+            writer.add_scalar("KLD Weight", kld_weight, model.global_step)
+            writer.add_scalar("Total Loss", total_loss, model.global_step)
 
             # Train step
-            optimizer.step()
+
             global_step += 1
 
         # Push traning sample images to tensorboard
@@ -114,6 +105,11 @@ def main():
             os.path.join(model_dir, f"decoder_{epoch:03}.pt"),
         )
 
+        # Save VAE model
+        torch.save(
+            model.vae.state_dict(),
+            os.path.join(model_dir, f"vae_{epoch:03}.pt"),
+        )
 
 if __name__ == "__main__":
     main()
